@@ -22,6 +22,7 @@ This is the heart of the project.
 *   **Sentiment Engine**: Analyzes massive amounts of review data to generate a single "Sentiment Score" (0-100).
 *   **Volatility Index**: Tracks price history to determine if a deal is actually good or just a markup-markdown trick.
 *   **LLM Synthesis**: Uses Large Language Model logic to generate an "Executive Summary" explaining *why* a specific product won the category.
+*   **LLM Synthesis**: Uses **Llama 3.3 (via Groq)** for ultra-fast, sub-second inference to generate an "Executive Summary" explaining *why* a specific product won the category.
 
 ## 🚀 Key Capabilities
 
@@ -35,12 +36,19 @@ This is the heart of the project.
 ### Prerequisites
 *   Node.js (v18+)
 *   Python (3.9+)
+*   **Groq API Key** (Free beta access available at console.groq.com)
 
 ### Installation
 
 **1. Start the Intelligence Engine (Backend)**
 ```bash
 cd backend
+
+# Setup Environment
+cp .env.example .env
+# Edit .env and paste your GROQ_API_KEY
+
+# Install & Run
 pip install -r requirements.txt
 uvicorn main:app --reload --port 8000
 ```

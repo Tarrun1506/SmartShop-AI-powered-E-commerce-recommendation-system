@@ -2,7 +2,7 @@ import React from 'react';
 import { ExternalLink, Star, Zap } from 'lucide-react';
 
 const ProductTile = ({ product, isWinner, isHero = false }) => {
-    const features = ["144Hz Refresh Rate", "1ms Response Time", "HDR10 Support", "IPS Panel"];
+    const features = product.specs || ["Top Rated", "Best Seller", "Free Shipping", "Verified"];
 
     return (
         <div className={`bento-card h-full flex ${isHero ? 'flex-col md:flex-row' : 'flex-col'} group bg-[#0A0A0A]`}>
@@ -35,28 +35,27 @@ const ProductTile = ({ product, isWinner, isHero = false }) => {
                 <div>
                     <div className="flex justify-between items-start mb-4">
                         <span className={`text-[10px] uppercase font-bold tracking-widest px-2 py-1 rounded border ${product.source === 'Amazon'
-                                ? 'text-orange-300 border-orange-500/20 bg-orange-500/10'
-                                : 'text-blue-300 border-blue-500/20 bg-blue-500/10'
+                            ? 'text-orange-300 border-orange-500/20 bg-orange-500/10'
+                            : 'text-blue-300 border-blue-500/20 bg-blue-500/10'
                             }`}>
                             {product.source}
                         </span>
                         <div className="flex items-center gap-1 text-yellow-500 text-xs font-bold">
-                            <Star className="w-3 h-3 fill-current" /> {product.rating}
+                            <Star className="w-3 h-3 fill-current" /> {product.rating} <span className='text-gray-600 font-normal'>({product.reviews})</span>
                         </div>
                     </div>
 
-                    <h3 className={`font-medium text-white mb-4 leading-snug group-hover:text-gray-200 transition-colors ${isHero ? 'text-3xl' : 'text-lg'}`}>
+                    <h3 className={`font-medium text-gray-100 mb-4 leading-relaxed group-hover:text-white transition-colors ${isHero ? 'text-2xl md:text-3xl' : 'text-lg'}`}>
                         {product.title}
                     </h3>
 
-                    {/* Feature Tags (Only show detailed list in Hero, simple tags in compact) */}
+                    {/* Feature Tags (Dynamic) */}
                     <div className="flex flex-wrap gap-2 mb-6">
                         {features.slice(0, isHero ? 4 : 2).map((f, i) => (
                             <span key={i} className="text-[10px] font-mono text-gray-400 bg-white/[0.03] px-2 py-1 rounded border border-white/[0.05]">
                                 {f}
                             </span>
                         ))}
-                        {!isHero && <span className="text-[10px] text-gray-500 py-1">+2 more</span>}
                     </div>
                 </div>
 

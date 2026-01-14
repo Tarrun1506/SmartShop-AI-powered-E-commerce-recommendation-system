@@ -13,48 +13,75 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-@app.get("/")
-def read_root():
-    return {"status": "SmartShop AI Backend Running (Re-Initialized)"}
+from services.llm_engine import LLMEngine
+
+llm_engine = LLMEngine()
 
 @app.get("/search")
 def search(q: str):
     """
-    Mock endpoint for Stage 1.
-    Simulates a search delay and returns fake product data.
+    Stage 2 Endpoint: AI-Powered Analysis.
     """
-    time.sleep(2) # Simulate thinking time
+    print(f"Processing query: {q}")
     
-    # Mock Response
+    # 1. Analyze Intent (Llama 3)
+    intent = llm_engine.analyze_intent(q)
+    print(f"Intent detected: {intent}")
+
+    # 2. Fetch Data (Mock for now, but using intent context)
+    # In Stage 3, this will call the Scraper logic
+    fake_price = intent.get('budget_range', {}).get('max', 5000) or 5000
+    category = intent.get('category', 'Generic Item')
+    
+    # Safe feature extraction
+    features = intent.get('key_features', [])
+    top_feature = features[0] if features else "Best Selling"
+    
+    # Text Cleanup: Don't repeat "Bluetooth" if it's already in "Bluetooth Speaker"
+    if top_feature.lower() in category.lower():
+        display_feature = "Pro"
+    else:
+        display_feature = top_feature.title()
+
+    results = [
+        {
+            "id": 1,
+            "title": f"Premium {category} ({display_feature} Edition)",
+            "price": f"₹{int(fake_price * 0.9)}",
+            "source": "Amazon",
+            "rating": 4.8,
+            "reviews": 1240,
+            "image": "https://source.unsplash.com/random/400x400/?" + category.replace(" ", ","),
+            "link": "#",
+            "specs": ["Top Rated", "Free Shipping", "Best Seller"]
+        },
+        {
+            "id": 2,
+            "title": f"Value {category} (Budget Pick)",
+            "price": f"₹{int(fake_price * 0.7)}",
+            "source": "Flipkart",
+            "rating": 4.3,
+            "reviews": 850,
+            "image": "https://source.unsplash.com/random/400x400/?" + category.replace(" ", ",") + ",tech",
+            "link": "#",
+            "specs": ["Value Choice", "Fast Tech", "Discounted"]
+        }
+    ]
+
+    # 3. Generate Insight (Llama 3)
+    summary = llm_engine.generate_market_summary(q, results)
+
+    # 4. Return Response
     return {
         "query": q,
+        "intent": intent, 
         "reasoning": [
-            f"Analyzing user request: '{q}'...",
-            "Identifying intent: Physical Product Search",
-            "Detected constraints: Budget-friendly, High Ratings",
-            "Searching Amazon...",
-            "Searching Flipkart...",
-            "Comparing prices and reviews...",
-            "Conclusion: Found 2 best matches."
+            f"Intent classified: {intent.get('category')}",
+            f"Budget constraints identified: Max ₹{fake_price}",
+            "Aggregating live market data...",
+            "Computing sentiment scores...",
+            "Synthesizing executive summary..."
         ],
-        "results": [
-            {
-                "id": 1,
-                "title": "Mock Amazon Product - " + q,
-                "price": "₹1,499",
-                "source": "Amazon",
-                "rating": 4.5,
-                "image": "https://via.placeholder.com/150",
-                "link": "#"
-            },
-            {
-                "id": 2,
-                "title": "Mock Flipkart Product - " + q,
-                "price": "₹1,299",
-                "source": "Flipkart",
-                "rating": 4.2,
-                "image": "https://via.placeholder.com/150",
-                "link": "#"
-            }
-        ]
+        "insight_summary": summary, # New field for UI
+        "results": results
     }

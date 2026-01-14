@@ -16,7 +16,7 @@ const CommandBar = ({ onSearch, isSearching, hasSearched }) => {
 
 
     return (
-        <div className="fixed bottom-8 left-1/2 -translate-x-1/2 w-full max-w-2xl px-4 z-50">
+        <div className="fixed bottom-3 left-1/2 -translate-x-1/2 w-full max-w-2xl px-4 z-50">
             <motion.form
                 onSubmit={handleSubmit}
                 initial={{ y: 20, opacity: 0 }}
