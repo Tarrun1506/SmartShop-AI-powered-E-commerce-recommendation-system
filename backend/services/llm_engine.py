@@ -72,18 +72,32 @@ class LLMEngine:
         data_context = "\n".join(product_summaries)
 
         system_prompt = """
-        You are a Senior Market Analyst.
-        Write a concise 2-sentence executive summary comparing these products for the user (who asked: "{query}").
-        Focus on value, trade-offs, and the clear winner.
-        Do not use markdown. Be professional and direct.
+        You are a Senior Strategic Buyer for a Fortune 500 company.
+        Your goal is to provide a specific, actionable justification for why the 'Winner' was chosen over the 'Runner-Up'.
+        
+        Rules:
+        1. Mention the Price Difference (e.g. "Save ₹500...").
+        2. Compare specific specs (RAM, Screen, etc) if visible in the title.
+        3. Be decisive. State clearly why the Winner is the better deal.
+        4. Max 3 sentences. Professional but punchy tone.
+        5. NO generic fluff like "Based on parameters". 
         """
 
         try:
+            # Prepare rich context
+            winner = products[0]
+            runner_up = products[1] if len(products) > 1 else None
+            
+            context_str = f"Query: {query}\n\nWINNER ({winner['source']}): {winner['title']} @ {winner['price']}\nRating: {winner['rating']}\n"
+            
+            if runner_up:
+                context_str += f"\nRUNNER-UP ({runner_up['source']}): {runner_up['title']} @ {runner_up['price']}\nRating: {runner_up['rating']}"
+
             completion = self.client.chat.completions.create(
                 model="llama-3.3-70b-versatile",
                 messages=[
                     {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": f"User Query: {query}\n\nTop Candidates:\n{data_context}"}
+                    {"role": "user", "content": context_str}
                 ],
                 temperature=0.7,
                 max_tokens=150
@@ -92,6 +106,44 @@ class LLMEngine:
         except Exception as e:
             print(f"LLM Summary Error: {e}")
             return "Real-time analysis interrupted. Top recommendations are based on price-to-performance ratio."
+
+    def extract_specs(self, products: list) -> dict:
+        """
+        Extracts 3-4 key technical specs from product titles using LLM.
+        Returns a dict mapping product_id (or index) to list of tags.
+        """
+        if not self.client or not products:
+            return {}
+
+        # Prepare batch prompt
+        items_str = ""
+        for i, p in enumerate(products[:3]): # Limit to top 3 for speed
+            items_str += f"ID {i}: {p['title']}\n"
+
+        system_prompt = """
+        You are a Tech Spec Extractor.
+        Input: List of product titles.
+        Task: Extract exactly 3-4 distinct, short key technical specs (e.g. "8GB RAM", "256GB SSD", "5G", "120Hz").
+        Rules:
+        - Max 15 chars per tag.
+        - NO generic words like "Best", "New", "Sale".
+        - Return JSON: {"0": ["spec1", "spec2"], "1": [...]}
+        """
+
+        try:
+            completion = self.client.chat.completions.create(
+                model="llama-3.3-70b-versatile",
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": items_str}
+                ],
+                temperature=0.1,
+                response_format={"type": "json_object"}
+            )
+            return json.loads(completion.choices[0].message.content)
+        except Exception as e:
+            print(f"LLM Spec Error: {e}")
+            return {}
 
     def _mock_intent(self, query):
         """Fallback for offline mode"""

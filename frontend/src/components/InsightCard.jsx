@@ -17,13 +17,9 @@ const InsightCard = ({ request, summary }) => {
 
                 <div className='flex items-start justify-between'>
                     <h3 className="text-lg font-medium text-white tracking-tight">Market Analysis: <span className="text-gray-400">"{request}"</span></h3>
-                    <div className="flex items-center gap-2 text-[10px] text-gray-500">
-                        <Sparkles className="w-3 h-3 text-blue-400" />
-                        <span>Confidence 98.4%</span>
-                    </div>
                 </div>
 
-                <p className="text-gray-300 text-xs leading-relaxed max-w-4xl font-light line-clamp-2">
+                <p className="text-gray-300 text-xs leading-relaxed font-light">
                     {summary || "Based on strict parameter analysis, we identified clear market leaders. The primary tradeoff in this category is between build quality and pure price-to-performance ratio. Our algorithm recommends the Amazon listing for speed and the Flipkart listing for maximum value."}
                 </p>
             </div>

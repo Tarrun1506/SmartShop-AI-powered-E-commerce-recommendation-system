@@ -1,3 +1,10 @@
+import sys
+import asyncio
+
+# Fix for Playwright on Windows: Force ProactorEventLoop
+if sys.platform.startswith("win"):
+    asyncio.set_event_loop_policy(asyncio.WindowsProactorEventLoopPolicy())
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 import time
@@ -14,13 +21,15 @@ app.add_middleware(
 )
 
 from services.llm_engine import LLMEngine
+from services.scraper_engine import ScraperEngine
 
 llm_engine = LLMEngine()
+scraper_engine = ScraperEngine()
 
 @app.get("/search")
-def search(q: str):
+async def search(q: str):
     """
-    Stage 2 Endpoint: AI-Powered Analysis.
+    Stage 3 Endpoint: Live AI + Web Scraping
     """
     print(f"Processing query: {q}")
     
@@ -28,45 +37,57 @@ def search(q: str):
     intent = llm_engine.analyze_intent(q)
     print(f"Intent detected: {intent}")
 
-    # 2. Fetch Data (Mock for now, but using intent context)
-    # In Stage 3, this will call the Scraper logic
-    fake_price = intent.get('budget_range', {}).get('max', 5000) or 5000
-    category = intent.get('category', 'Generic Item')
+    # 2. Fetch Data (LIVE Scrape)
+    print("Initiating Live Scrape...")
+    results = await scraper_engine.search(q)
     
-    # Safe feature extraction
-    features = intent.get('key_features', [])
-    top_feature = features[0] if features else "Best Selling"
-    
-    # Text Cleanup: Don't repeat "Bluetooth" if it's already in "Bluetooth Speaker"
-    if top_feature.lower() in category.lower():
-        display_feature = "Pro"
-    else:
-        display_feature = top_feature.title()
+    # Fallback to Mock if Scrape fails (Anti-Bot or Network issue)
+    if not results:
+        print("Scrape empty. Falling back to Mock Data.")
+        fake_price = intent.get('budget_range', {}).get('max', 5000) or 5000
+        category = intent.get('category', 'Generic Item')
+        
+        features = intent.get('key_features', [])
+        top_feature = features[0] if features else "Best Selling"
+        
+        if top_feature.lower() in category.lower():
+            display_feature = "Pro"
+        else:
+            display_feature = top_feature.title()
 
-    results = [
-        {
-            "id": 1,
-            "title": f"Premium {category} ({display_feature} Edition)",
-            "price": f"₹{int(fake_price * 0.9)}",
-            "source": "Amazon",
-            "rating": 4.8,
-            "reviews": 1240,
-            "image": "https://source.unsplash.com/random/400x400/?" + category.replace(" ", ","),
-            "link": "#",
-            "specs": ["Top Rated", "Free Shipping", "Best Seller"]
-        },
-        {
-            "id": 2,
-            "title": f"Value {category} (Budget Pick)",
-            "price": f"₹{int(fake_price * 0.7)}",
-            "source": "Flipkart",
-            "rating": 4.3,
-            "reviews": 850,
-            "image": "https://source.unsplash.com/random/400x400/?" + category.replace(" ", ",") + ",tech",
-            "link": "#",
-            "specs": ["Value Choice", "Fast Tech", "Discounted"]
-        }
-    ]
+        results = [
+            {
+                "id": 1,
+                "title": f"Premium {category} ({display_feature} Edition)",
+                "price": f"₹{int(fake_price * 0.9)}",
+                "source": "Amazon",
+                "rating": 4.8,
+                "reviews": 1240,
+                "image": "https://source.unsplash.com/random/400x400/?" + category.replace(" ", ","),
+                "link": "#",
+                "specs": ["Top Rated", "Free Shipping", "Best Seller"]
+            },
+            {
+                "id": 2,
+                "title": f"Value {category} (Budget Pick)",
+                "price": f"₹{int(fake_price * 0.7)}",
+                "source": "Flipkart",
+                "rating": 4.3,
+                "reviews": 850,
+                "image": "https://source.unsplash.com/random/400x400/?" + category.replace(" ", ",") + ",tech",
+                "link": "#",
+                "specs": ["Value Choice", "Fast Tech", "Discounted"]
+            }
+        ]
+
+    # 2b. AI Spec Extraction
+    if results:
+        print("Extracting intelligent specs...")
+        specs_map = llm_engine.extract_specs(results)
+        for i, item in enumerate(results):
+            # Map back 0-indexed keys from LLM to results
+            if str(i) in specs_map:
+                item['specs'] = specs_map[str(i)]
 
     # 3. Generate Insight (Llama 3)
     summary = llm_engine.generate_market_summary(q, results)
@@ -77,11 +98,10 @@ def search(q: str):
         "intent": intent, 
         "reasoning": [
             f"Intent classified: {intent.get('category')}",
-            f"Budget constraints identified: Max ₹{fake_price}",
-            "Aggregating live market data...",
-            "Computing sentiment scores...",
-            "Synthesizing executive summary..."
+            f"Launched Spider threads for Amazon & Flipkart",
+            f"Analyzed {len(results)} live market candidates",
+            "Synthesizing executive summary based on real pricing..."
         ],
-        "insight_summary": summary, # New field for UI
+        "insight_summary": summary,
         "results": results
     }

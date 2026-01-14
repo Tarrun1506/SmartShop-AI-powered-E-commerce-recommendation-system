@@ -4,7 +4,6 @@ import CommandBar from './components/CommandBar';
 import ProductTile from './components/ProductTile';
 import InsightCard from './components/InsightCard';
 import HeroSection from './components/HeroSection';
-import { PriceRangeCard, SentimentCard } from './components/StatComponents';
 import { motion, AnimatePresence } from 'framer-motion';
 
 function App() {
@@ -12,6 +11,7 @@ function App() {
   const [hasSearched, setHasSearched] = useState(false);
   const [lastQuery, setLastQuery] = useState("");
   const [results, setResults] = useState([]);
+  const [summary, setSummary] = useState("");
 
   const handleSearch = async (query) => {
     setIsSearching(true);
@@ -24,12 +24,20 @@ function App() {
       // Simulate delay for "Analysis" feel
       setTimeout(() => {
         setResults(response.data.results);
+        setSummary(response.data.insight_summary);
         setIsSearching(false);
       }, 1500);
     } catch (error) {
       console.error("Search failed", error);
       setIsSearching(false);
     }
+  };
+
+  const handleReset = () => {
+    setIsSearching(false);
+    setHasSearched(false);
+    setLastQuery("");
+    setResults([]);
   };
 
   return (
@@ -44,12 +52,15 @@ function App() {
       <main className="container mx-auto px-6 pt-6 flex-1 relative z-10 max-w-[1400px] flex flex-col">
         {/* Header */}
         <nav className="flex justify-between items-center mb-12 opacity-60">
-          <div className="flex items-center gap-3">
+          <button
+            onClick={handleReset}
+            className="flex items-center gap-3 hover:opacity-100 hover:scale-105 transition-all cursor-pointer"
+          >
             <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center">
               <div className="w-3 h-3 bg-black rounded-full"></div>
             </div>
             <span className="font-semibold tracking-tight">SmartShop Analyst</span>
-          </div>
+          </button>
 
         </nav>
 
@@ -70,7 +81,7 @@ function App() {
           >
             {/* 1. Header Analysis (Auto Height) */}
             <div className="md:col-span-12 h-fit">
-              <InsightCard request={lastQuery} />
+              <InsightCard request={lastQuery} summary={summary} />
             </div>
 
             {/* 2. THE HERO: Fills remaining space */}
@@ -80,16 +91,10 @@ function App() {
 
             {/* 3. The Comparison */}
             {results[1] && (
-              <div className="md:col-span-4 md:row-span-1 h-full min-h-0">
+              <div className="md:col-span-4 md:row-span-2 h-full min-h-0">
                 <ProductTile product={results[1]} isWinner={false} />
               </div>
             )}
-
-            {/* 4. Stats Stack */}
-            <div className="md:col-span-4 md:row-span-1 grid grid-cols-2 gap-4 h-full min-h-0">
-              <PriceRangeCard min="₹1.2k" max="₹1.8k" avg="₹1.5k" />
-              <SentimentCard score={92} />
-            </div>
 
           </motion.div>
         )}
